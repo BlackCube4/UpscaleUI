@@ -27,10 +27,10 @@ Opt2 := [ , 0x414141]
 
 Gui, Add, Text, x0 y20 w350 h20 +Center cwhite, Select an action.
 
-Gui, Add, Button, hwndHBT1 gUpscale x25 w144 h30 , Upscale
+Gui, Add, Button, hwndHBT1 vUpscale gUpscale x25 w144 h30 , Upscale
 ImageButton.Create(HBT1, Opt1, Opt2, , , Opt5)
 
-Gui, Add, Button, hwndHBT1 gAnimeUpscale x+12 w144 h30 , Anime Upscale
+Gui, Add, Button, hwndHBT1 vAnimeUpscale gAnimeUpscale x+12 w144 h30 , Anime Upscale
 ImageButton.Create(HBT1, Opt1, Opt2, , , Opt5)
 
 Gui, Add, Button, hwndHBT1 gAnimeVideoUpscale x25 y+12 w300 h30 , Anime Video Upscale
@@ -77,115 +77,116 @@ Gui, Submit, NoHide
 GuiControl, , FFMPEG, % FFMPEG * (- 1) + 1
 return
 
-GuiDropFiles:
-GuiControl,, Progress, 0
-GuiControl,, ProgressText, Progress: 0`%
-fileArray:=[]
-numberOfFiles:=0
 
-Loop, Parse, A_GuiEvent, `n
-{
-	if IsImageFile(A_LoopField) {
-		fileArray.Push(A_LoopField)
-		numberOfFiles++
+
+
+
+
+
+;-------------------------------------Drop files on GUI---------------------------------
+GuiDropFiles:
+	fileArray:=[]
+	numberOfFiles:=0
+
+	if (A_GuiControl != "Upscale") {
+		model:="realesrgan-x4plus-anime"
+		fileExt:="_x4anime"
 	}
-}
-Loop, % fileArray.MaxIndex()
-{
-	input:=fileArray[A_Index]
-	output:=SubStr(fileArray[A_Index], 1, -4) . "_AnimeUpscale" . SubStr(fileArray[A_Index], -3, 4)
-	RunWait, "realesrgan-ncnn-vulkan.exe" -i "%input%" -o "%output%" -n realesrgan-x4plus-anime, , Hide
-	varProgress:=Ceil(A_Index/numberOfFiles*100)
-	GuiControl,, Progress, %varProgress%
-	GuiControl,, ProgressText, Progress: %varProgress%`% (%A_Index%/%numberOfFiles%)
-}
+	else {
+		model:="realesrgan-x4plus"
+		fileExt:="_x4"
+	}
+
+	Loop, Parse, A_GuiEvent, `n
+	{
+		if IsImageFile(A_LoopField) {
+			fileArray.Push(A_LoopField)
+			numberOfFiles++
+		}
+		else
+			msgbox %A_LoopField% is not a supported image type (png, jpg).
+	}
+
+	GuiControl,, Progress, 0
+	GuiControl,, ProgressText, Progress: 0`% (0/%numberOfFiles%)
+
+	Loop %numberOfFiles% {
+		input:=fileArray[A_Index]
+		output:=SubStr(fileArray[A_Index], 1, -4) . fileExt . SubStr(fileArray[A_Index], -3, 4)
+		RunWait, "realesrgan-ncnn-vulkan.exe" -i "%input%" -o "%output%" -n %model%, , Hide
+		varProgress:=Ceil(A_Index/numberOfFiles*100)
+		GuiControl,, Progress, %varProgress%
+		GuiControl,, ProgressText, Progress: %varProgress%`% (%A_Index%/%numberOfFiles%)
+	}
 return
 
+
+
+
+
+
+
+;-------------------------------------Image Upscale via Buttons---------------------------------
 Upscale:
-	Gui, Submit, NoHide
-	GuiControl,, Progress, 0
-	GuiControl,, ProgressText, Progress:
-	
-	FileSelectFile, imagesToUpscale , M 1, Image File, Select the Images you want to Upscale, Images (*.png; *.jpg)
-
-	i:=0
-	inputfileArray:=[]
-	outputfileArray:=[]
-	loop,parse,imagesToUpscale,`n,`r 
-	{
-		if (A_Index = 1) {
-			path:=A_loopfield
-			continue
-		}
-		inputDir:=path . "\" . A_loopfield
-		outputDir:=path . "\Upscale-x4\" . A_loopfield
-		inputfileArray.Push(inputDir)
-		outputfileArray.Push(outputDir)
-	}
-	numberOfFiles:=inputfileArray.MaxIndex()
-	i:=1
-	Loop % numberOfFiles {
-		input:=inputfileArray[i]
-		output:=outputfileArray[i]
-		RunWait, "realesrgan-ncnn-vulkan.exe" -i "%input%" -o "%output%" -n realesrgan-x4plus, , Hide
-		varProgress:=Floor(i/numberOfFiles*100)
-		if (numberOfFiles=i)
-			varProgress:=100
-		GuiControl,, Progress, %varProgress%
-		GuiControl,, ProgressText, Progress: %varProgress%`% (%i%/%numberOfFiles%)
-		i++
-	}
-	;msgbox finished :)
-	return
-
-
+	upscale("realesrgan-x4plus", "\Upscale_x4\")
+Return
 
 AnimeUpscale:
-	Gui, Submit, NoHide
-	GuiControl,, Progress, 0
-	GuiControl,, ProgressText, Progress:
-	
-	FileSelectFile, imagesToUpscale , M 1, Image File, Select the Images you want to Upscale, Images (*.png; *.jpg)
+	upscale("realesrgan-x4plus-anime", "\Upscale_x4Anime\")
+Return
 
-	i:=0
-	inputfileArray:=[]
-	outputfileArray:=[]
+upscale(model, folderName) {
+	inputArray := []
+	outputArray := []
+	FileSelectFile, imagesToUpscale , M 1, Image File, Select the Images you want to Upscale, Images (*.png; *.jpg)
+	
 	loop,parse,imagesToUpscale,`n,`r 
 	{
-		msgbox % A_loopfield
 		if (A_Index = 1) {
 			path:=A_loopfield
 			continue
 		}
-		inputDir:=path . "\" . A_loopfield
-		outputDir:=path . "\Upscale-x4-Anime\" . A_loopfield
-		inputfileArray.Push(inputDir)
-		outputfileArray.Push(outputDir)
+		if IsImageFile(A_LoopField) {
+			inputArray.Push(path . "\" . A_loopfield)
+			outputArray.Push(path . folderName . A_loopfield)
+		}
+		else
+			msgbox %A_LoopField% is not a supported image type (png, jpg).
 	}
-	numberOfFiles:=inputfileArray.MaxIndex()
-	i:=1
-	Loop % numberOfFiles {
-		input:=inputfileArray[i]
-		output:=outputfileArray[i]
-		RunWait, "realesrgan-ncnn-vulkan.exe" -i "%input%" -o "%output%" -n realesrgan-x4plus-anime, , Hide
-		varProgress:=Floor(i/numberOfFiles*100)
-		if (numberOfFiles=i)
-			varProgress:=100
-		GuiControl,, Progress, %varProgress%
-		GuiControl,, ProgressText, Progress: %varProgress%`% (%i%/%numberOfFiles%)
-		i++
-	}
-	;msgbox finished :)
-	return
 
+	numberOfFiles := inputArray.MaxIndex()
+	GuiControl,, Progress, 0
+	GuiControl,, ProgressText, Progress: 0`% (0/%numberOfFiles%)
+	
+	Loop %numberOfFiles% {
+		input:=inputArray[A_Index]
+		output:=outputArray[A_Index]
+		RunWait, "realesrgan-ncnn-vulkan.exe" -i "%input%" -o "%output%" -n %model%, , Hide
+		varProgress:=Ceil(A_Index/numberOfFiles*100)
+		GuiControl,, Progress, %varProgress%
+		GuiControl,, ProgressText, Progress: %varProgress%`% (%A_Index%/%numberOfFiles%)
+	}
+}
+
+
+
+
+
+
+
+;-------------------------------------Video Upscale via Buttons---------------------------------
 AnimeVideoUpscale:
 	Gui, Submit, NoHide
-	GuiControl,, Progress, 0
-	GuiControl,, ProgressText, Progress:
 	
+	;FileRemoveDir, tmp_frames, 1
+	;FileRemoveDir, out_frames, 1
+	
+	; select Video
 	FileSelectFile, videosToUpscale , M 1, Video File, Select the Videos you want to Upscale, Videos (*.mp4; *.mkv)
-
-	i:=0
+	if ErrorLevel
+		return
+	
+	;count how many videos to upscale
 	inputfileArray:=[]
 	outputfileArray:=[]
 	loop,parse,videosToUpscale,`n,`r 
@@ -194,41 +195,52 @@ AnimeVideoUpscale:
 			path:=A_loopfield
 			continue
 		}
-		inputDir:=path . "\" . A_loopfield
-		outputDir:=path . "\Upscale-Video\" . A_loopfield
-		inputfileArray.Push(inputDir)
-		outputfileArray.Push(outputDir)
+		if IsVideoFile(A_LoopField) {
+			inputfileArray.Push(path . "\" . A_loopfield)
+			outputfileArray.Push(path . "\Upscale_Video\" . A_loopfield)
+		}
+		else
+			msgbox %A_LoopField% is not a supported video type (mp4, mkv).
 	}
 	if (path!="") {
-		FileCreateDir, %path%\Upscale-Video
+		FileCreateDir, %path%\Upscale_Video
 	}
+	
+	FileCreateDir, tmp_frames
+	FileCreateDir, out_frames
 	numberOfFiles:=inputfileArray.MaxIndex()
-	i:=1
+	GuiControl,, Progress, 0
+	GuiControl,, ProgressText, Progress: 0`% (0/%numberOfFiles%)
+	
 	Loop % numberOfFiles {
-		input:=inputfileArray[i]
-		output:=outputfileArray[i]
-		percent:="%"
-		if (FFMPEG=0) {
-			RunWait, "FFmpeg\bin\ffmpeg.exe" -i "%input%" -qscale:v 1 -qmin 1 -qmax 1 -vsync 0 "tmp_frames/frame%percent%08d.jpg", , Hide
-		}
-		else {
-			RunWait, ffmpeg -i "%input%" -qscale:v 1 -qmin 1 -qmax 1 -vsync 0 "tmp_frames/frame%percent%08d.jpg", , Hide
-		}
-		RunWait, realesrgan-ncnn-vulkan.exe -i tmp_frames -o out_frames -n realesr-animevideov3 -s %scale% -f jpg, , Hide
-		if (FFMPEG=0) {
-			RunWait, "FFmpeg\bin\ffmpeg.exe" -i out_frames/frame%percent%08d.jpg -i "%input%" -map 0:v:0 -map 1:a:0 -c:a copy -c:v libx264 -r 23.98 -pix_fmt yuv420p "%output%", , Hide
-		}
-		else {
-			RunWait, ffmpeg -i out_frames/frame%percent%08d.jpg -i "%input%" -map 0:v:0 -map 1:a:0 -c:a copy -c:v libx264 -r 23.98 -pix_fmt yuv420p "%output%", , Hide
-		}
-		varProgress:=Floor(i/numberOfFiles*100)
-		if (numberOfFiles=i)
-			varProgress:=100
+		input:=inputfileArray[A_Index]
+		output:=outputfileArray[A_Index]
+		FileDelete, %output%
+		
+		if (FFMPEG=0)
+			RunWait, "FFmpeg\bin\ffmpeg.exe" -i "%input%" -qscale:v 1 -qmin 1 -qmax 1 -vsync 0 "tmp_frames/frame`%08d.jpg", , Hide
+		else
+			RunWait, ffmpeg -i "%input%" -qscale:v 1 -qmin 1 -qmax 1 -vsync 0 "tmp_frames/frame`%08d.jpg", , Hide
+			
+		varProgress:=Ceil(A_Index*0.33/numberOfFiles*100)
 		GuiControl,, Progress, %varProgress%
-		GuiControl,, ProgressText, Progress: %varProgress%`% (%i%/%numberOfFiles%)
-		i++
+		GuiControl,, ProgressText, % "Progress: " . varProgress . "%" . " (" A_Index-1 . "/" . numberOfFiles . ")"
+			
+		RunWait, realesrgan-ncnn-vulkan.exe -i tmp_frames -o out_frames -n realesr-animevideov3 -s %scale% -f jpg, , Hide
+		
+		varProgress:=Ceil(A_Index*0.66/numberOfFiles*100)
+		GuiControl,, Progress, %varProgress%
+		GuiControl,, ProgressText, % "Progress: " . varProgress . "%" . " (" A_Index-1 . "/" . numberOfFiles . ")"
+		
+		if (FFMPEG=0)
+			RunWait, "FFmpeg\bin\ffmpeg.exe" -i out_frames/frame`%08d.jpg -i "%input%" -map 0:v:0 -map 1:a:0 -c:a copy -c:v libx264 -r 23.98 -pix_fmt yuv420p "%output%", , Hide
+		else
+			RunWait, ffmpeg -i out_frames/frame`%08d.jpg -i "%input%" -map 0:v:0 -map 1:a:0 -c:a copy -c:v libx264 -r 23.98 -pix_fmt yuv420p "%output%", , Hide
+			
+		varProgress:=Ceil(A_Index/numberOfFiles*100)
+		GuiControl,, Progress, %varProgress%
+		GuiControl,, ProgressText, Progress: %varProgress%`% (%A_Index%/%numberOfFiles%)
 	}
-	;msgbox finished :)
 	return
 
 IsImageFile(filePath) {
@@ -240,6 +252,20 @@ IsImageFile(filePath) {
 
     ; Check if it's an image file
     if (fileExt = "jpg" or fileExt = "png")
+        return 1
+    else
+        return 0
+}
+
+IsVideoFile(filePath) {
+    ; Split the file path by the dot character
+	Array := StrSplit(filePath , ".")
+
+    ; Get the last part of the split string, which should be the file extension
+    fileExt := Array[Array.MaxIndex()]
+
+    ; Check if it's an image file
+    if (fileExt = "mp4" or fileExt = "mkv")
         return 1
     else
         return 0
