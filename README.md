@@ -1,5 +1,7 @@
 # UpscaleUI
- Simple Gui for Real-ESRGAN v0.2.5.0
+Simple Gui for Real-ESRGAN v0.2.5.0
+
+AI Upscale png/jpg/webp images or mp4/mkv videos. Images with transparency supported.
 
 Simply drag an image onto the Gui to upscale it to x4, or use one of the buttons and select the files you want to upscale.
 
@@ -16,5 +18,9 @@ gyan
 AHK-just-me
 - Class_ImageButton
 - https://github.com/AHK-just-me/Class_ImageButton
+
+ImageMagick (used for better alpha handling)
+- https://github.com/ImageMagick/ImageMagick
+- https://imagemagick.org
 
 ![Gui](https://i.postimg.cc/d0RBGxvJ/Example.png)

@@ -1,0 +1,4 @@
+BSRGAN, realsrgan, realesrgan-plus, realesrgan-plus-Anime
+
+?
+Lollypop, SwinIR, Remacri, Valar, UltraSharp, LDSR
