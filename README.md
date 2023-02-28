@@ -10,6 +10,9 @@ xinntao
 - Real-ESRGAN V0.2.5.0
 - https://github.com/xinntao/Real-ESRGAN
 
+cszn
+- https://github.com/cszn/BSRGAN
+
 gyan
 - FFmpeg 64-bit static Windows build
 - www.gyan.dev
@@ -23,4 +26,12 @@ ImageMagick (used for better alpha handling)
 - https://github.com/ImageMagick/ImageMagick
 - https://imagemagick.org
 
-![Gui](https://i.postimg.cc/d0RBGxvJ/Example.png)
+## GUI:
+![Gui](https://i.postimg.cc/N097TsC9/grafik.png)
+
+## Examples:
+![Example1](https://i.postimg.cc/jSQCFGWg/grafik.png)
+![Example1](https://i.postimg.cc/25gytvdG/grafik.png)
+
+![Example2](https://i.postimg.cc/q7xDbXdV/grafik.png)
+![Example2](https://i.postimg.cc/y84z2P2k/grafik.png)
