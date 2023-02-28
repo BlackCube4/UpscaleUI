@@ -39,11 +39,14 @@ ImageButton.Create(HBT1, Opt1, Opt2, , , Opt5)
 Gui, Add, Button, hwndHBT1 vBSRGANUpscale gBSRGANUpscale x+12 wp hp , BSRGAN
 ImageButton.Create(HBT1, Opt1, Opt2, , , Opt5)
 
-Gui, Add, Button, hwndHBT1 vAnimeVideoUpscale gAnimeVideoUpscale x25 y+30 w280 hp , Anime Video Upscale
+Gui, Add, CheckBox, Checked vEnhaTran x26 y+15 h20 w20,
+Gui, Add, Text, x+-0 y+-18 w150 h20 +Left cwhite gCheckbox, Enhance Transparency
+
+Gui, Add, Button, hwndHBT1 vAnimeVideoUpscale gAnimeVideoUpscale x25 y+30 w280 h30 , Anime Video Upscale
 ImageButton.Create(HBT1, Opt1, Opt2, , , Opt5)
 
 Gui, Add, CheckBox, Checked vFFMPEG x26 y+15 h20 w20,
-Gui, Add, Text, x+-0 y+-18 w95 h20 +Left cwhite gCheckbox, installed ffmpeg
+Gui, Add, Text, x+-0 y+-18 w95 h20 +Left cwhite gCheckbox2, installed ffmpeg
 
 Gui, Add, Text, x+0 y+-20 w110 h20 +Right cwhite, Scale:
 Gui, Add, Button, x+5 y+-25 w45 h26 hwndHBT1 vBackground1,
@@ -79,10 +82,13 @@ return
 
 Checkbox:
 Gui, Submit, NoHide
-GuiControl, , FFMPEG, % FFMPEG * (- 1) + 1
+GuiControl, , EnhaTran, % EnhaTran * (- 1) + 1
 return
 
-
+Checkbox2:
+Gui, Submit, NoHide
+GuiControl, , FFMPEG, % FFMPEG * (- 1) + 1
+return
 
 
 
@@ -196,8 +202,10 @@ createArray(folderName) {
 
 ;-------------------------------------Image Upscale Funktion---------------------------------
 upscale(model) {
+	Gui, Submit, NoHide
 	global inputArray
 	global outputArray
+	global EnhaTran
 
 	numberOfFiles := inputArray.MaxIndex()
 	GuiControl,, Progress, 0
@@ -211,7 +219,7 @@ upscale(model) {
 		;	RunWait, %ComSpec% /c ImageMagick-7.1.0-62-portable-Q16-HDRI-x64\magick.exe "%input%" Temp\pngConvert.png, ,Hide 
 		;	input:="Temp\pngConvert.png"
 		;}
-		if (IsImageFile(input)>1) {
+		if (IsImageFile(input)>1 and EnhaTran=1) {
 			RunWait, %ComSpec% /c ImageMagick-7.1.0-62-portable-Q16-HDRI-x64\identify.exe -format '`%[channels]' "%input%" >>Temp\alpha.txt, ,Hide 
 			FileRead, isAlpha, Temp\alpha.txt
 			if inStr(isAlpha, "a") {
@@ -276,6 +284,7 @@ Return
 upscaleVideo(scale) {
 	global inputArray
 	global outputArray
+	global FFMPEG
 	
 	FileCreateDir, tmp_frames
 	FileCreateDir, out_frames
