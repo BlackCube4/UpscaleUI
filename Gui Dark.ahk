@@ -40,7 +40,15 @@ Gui, Add, Button, hwndHBT1 vBSRGANUpscale gBSRGANUpscale x+12 wp hp , BSRGAN
 ImageButton.Create(HBT1, Opt1, Opt2, , , Opt5)
 
 Gui, Add, CheckBox, Checked vEnhaTran x26 y+15 h20 w20,
-Gui, Add, Text, x+-0 y+-18 w150 h20 +Left cwhite gCheckbox, Enhance Transparency
+Gui, Add, Text, x+-0 y+-18 w95 h20 +Left cwhite gCheckbox, clean transp.
+
+Gui, Add, Text, x+-15 y+-20 w110 h20 +Right cwhite, Scale:
+Gui, Add, Button, x+5 y+-25 w60 h26 hwndHBT1 vBackground1,
+ImageButton.Create(HBT1, Opt1, Opt1, , , Opt1)
+Gui, Add, Edit, x+-56 y+-21 h16 w55 +Center -E0x200 -Border cwhite
+Gui, Add, UpDown, Hidden vImageScale Range100-400, 400
+Gui, Add, Picture, x+-14 y+-21 gUpRound, DarkGui\UpRound.png
+Gui, Add, Picture, y+-0 gDownRound, DarkGui\DownRound.png
 
 Gui, Add, Button, hwndHBT1 vAnimeVideoUpscale gAnimeVideoUpscale x25 y+30 w280 h30 , Anime Video Upscale
 ImageButton.Create(HBT1, Opt1, Opt2, , , Opt5)
@@ -49,19 +57,19 @@ Gui, Add, CheckBox, Checked vFFMPEG x26 y+15 h20 w20,
 Gui, Add, Text, x+-0 y+-18 w95 h20 +Left cwhite gCheckbox2, installed ffmpeg
 
 Gui, Add, Text, x+0 y+-20 w110 h20 +Right cwhite, Scale:
-Gui, Add, Button, x+5 y+-25 w45 h26 hwndHBT1 vBackground1,
+Gui, Add, Button, x+5 y+-25 w45 h26 hwndHBT1 vBackground2,
 ImageButton.Create(HBT1, Opt1, Opt1, , , Opt1)
 Gui, Add, Edit, x+-41 y+-21 h16 w40 +Center -E0x200 -Border cwhite
 Gui, Add, UpDown, Hidden vscale Range2-4, 4
-Gui, Add, Picture, x+-14 y+-21 gUpRound, DarkGui\UpRound.png
-Gui, Add, Picture, y+-0 gDownRound, DarkGui\DownRound.png
+Gui, Add, Picture, x+-14 y+-21 gUpRound2, DarkGui\UpRound.png
+Gui, Add, Picture, y+-0 gDownRound2, DarkGui\DownRound.png
 
 Gui, Add, Text, vProgressText x25 y+30 w280 h16 cwhite, Progress:
-Gui, Add, Button, hwndHBT1 x25 y+8 w280 h22 vBackground2,
+Gui, Add, Button, hwndHBT1 x25 y+8 w280 h22 vBackground3,
 ImageButton.Create(HBT1, Opt1, Opt2, , , Opt5)
 Gui, Add, Progress, x+-279 y+-21 w278 h20 Background%GuiElementsColor% c005FB8 vProgress, 0
 
-loop 2
+loop 3
 	GuiControl, Disable, % "Background" . A_Index
 
 ;ControlFocus, Button1, AniRip ahk_class AutoHotkeyGUI
@@ -72,10 +80,20 @@ Return
 
 UpRound:
 Gui, Submit, NoHide
-GuiControl, , scale, % scale + 1
+GuiControl, , ImageScale, % ImageScale + 25
 return
 
 DownRound:
+Gui, Submit, NoHide
+GuiControl, , ImageScale, % ImageScale - 25
+return
+
+UpRound2:
+Gui, Submit, NoHide
+GuiControl, , scale, % scale + 1
+return
+
+DownRound2:
 Gui, Submit, NoHide
 GuiControl, , scale, % scale - 1
 return
@@ -99,6 +117,10 @@ GuiDropFiles:
 	Gui, Submit, NoHide
 	inputArray := []
 	outputArray := []
+	outputArray1 := []
+	outputArray2 := []
+	outputArray3 := []
+	outputArray4 := []
 
 	if (A_GuiControl = "Upscale") {
 		model:="realesrgan-x4plus"
@@ -115,6 +137,9 @@ GuiDropFiles:
 	else if (A_GuiControl = "AnimeVideoUpscale") {
 		fileExt:="_x4video"
 	}
+	else if (A_GuiControl = "Progress") {
+		fileExt:="all"
+	}
 	else {
 		model:="realesrgan-x4plus-anime"
 		fileExt:="_x4anime"
@@ -127,8 +152,20 @@ GuiDropFiles:
 			RegExMatch(A_LoopField, "(.*)(\..*)", SubPart)
 			;if SubPart2=".webp"
 			;	SubPart2=".png"
-			outPath:=SubPart1 . fileExt . SubPart2
-			outputArray.Push(outPath)
+			if (fileExt="all") {
+				outPath1:=SubPart1 . "_x4" . SubPart2
+				outPath2:=SubPart1 . "_x4BSRGAN" . SubPart2
+				outPath3:=SubPart1 . "_x4real" . SubPart2
+				outPath4:=SubPart1 . "_x4anime" . SubPart2
+				outputArray1.Push(outPath1)
+				outputArray2.Push(outPath2)
+				outputArray3.Push(outPath3)
+				outputArray4.Push(outPath4)
+			}
+			else {
+				outPath:=SubPart1 . fileExt . SubPart2
+				outputArray.Push(outPath)
+			}
 		}
 		else if (fileExt="_x4video" and IsVideoFile(A_LoopField)) {
 			inputArray.Push(A_LoopField)
@@ -143,6 +180,22 @@ GuiDropFiles:
 	}
 	if (fileExt="_x4video")
 		upscaleVideo(scale)
+	else if (fileExt="all") {
+		outputArray:=outputArray1
+		upscale("realesrgan-x4plus")
+		GuiControl,, Progress, 0
+		GuiControl,, ProgressText, Progress:
+		outputArray:=outputArray2
+		upscale("bsrgan-x4")
+		GuiControl,, Progress, 0
+		GuiControl,, ProgressText, Progress:
+		outputArray:=outputArray3
+		upscale("realsrgan-x4")
+		GuiControl,, Progress, 0
+		GuiControl,, ProgressText, Progress:
+		outputArray:=outputArray4
+		upscale("realesrgan-x4plus-anime")
+	}
 	else
 		upscale(model)
 return
@@ -206,6 +259,7 @@ upscale(model) {
 	global inputArray
 	global outputArray
 	global EnhaTran
+	global ImageScale
 
 	numberOfFiles := inputArray.MaxIndex()
 	GuiControl,, Progress, 0
@@ -227,6 +281,10 @@ upscale(model) {
 				RunWait, "realesrgan-ncnn-vulkan.exe" -i Temp\alpha.png -o Temp\alphaUpscale.png -n %model%, , Hide
 				RunWait, %ComSpec% /c ImageMagick-7.1.0-62-portable-Q16-HDRI-x64\convert.exe "%output%" Temp\alphaUpscale.png -alpha off -compose copy_opacity -composite "%output%", ,Hide
 			}
+		}
+		if (ImageScale < 400) {
+			ImageScale:=ImageScale/4
+			RunWait, %ComSpec% /c ImageMagick-7.1.0-62-portable-Q16-HDRI-x64\magick.exe "%output%" -resize %ImageScale%`% "%output%", ,Hide 
 		}
 		varProgress:=Ceil(A_Index/numberOfFiles*100)
 		GuiControl,, Progress, %varProgress%
